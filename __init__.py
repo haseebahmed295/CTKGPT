@@ -2,11 +2,14 @@ import threading
 import tkinter
 import customtkinter
 import keyboard
+from colorize import Text_hightlighter
+from keys import KeyboardHandler
 import sv_ttk
 from prompt import process_gpt_request
 from CTkColorPicker import *
 from CTkMenuBar import *
 import pywinstyles
+from options import Settings
 
 customtkinter.set_appearance_mode("Light")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("dark-blue")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -17,10 +20,7 @@ class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
         self.is_prompting = False
-        self.keys = {'ctrl+-':self.on_ctrl_minus , 'ctrl+=':self.on_ctrl_plus, 'enter':self.prompt}
-        self.add_keys(self.keys)
-        # configure window
-
+        self.keyboard_handler = KeyboardHandler(self)
 
         self.title('GPT Tempslate')
         self.geometry(f"{1100}x{580}")
@@ -71,31 +71,23 @@ class App(customtkinter.CTk):
         self.font = customtkinter.CTkFont(size = 15)
         self.textbox = customtkinter.CTkTextbox(self ,font=self.font , state = 'disable' , wrap = 'word')                        
         self.textbox.grid(row=0, column=1,columnspan=3,rowspan = 3, padx=(10, 10), pady=( 10, 0) ,sticky="nsew")
-
         # self.textbox_1 = customtkinter.CTkTextbox(self.textbox , height = self.textbox.cget('height') ,font=font , fg_color = 'green')
         # self.textbox_1.grid(row=1, column=0, padx=(10, 10), pady=(10, 0) ,sticky="nsew")
+
+        self.hightlight = Text_hightlighter(self, self.textbox)
+
         self.menu = CTkTitleMenu(self).add_cascade("Options")
         op = CustomDropdownMenu(widget=self.menu)
-        op.add_option(option="value") 
-        op.add_separator() 
-        submenu = op.add_submenu("submenu") 
-        submenu.add_option(option="value")
+        op.add_option(option="Settings" ,command=self.open_settings)
 
-    def add_keys(self , keys):
-        for key in keys:
-            keyboard.add_hotkey(key, keys[key])
-        
-    def on_ctrl_minus(self):
-        if self.font.cget('size') > 1:
-            self.font.configure(size = self.font.cget('size') - 1)
+        self.toplevel_window = None 
+
+    def open_settings(self):
+        if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
+            self.toplevel_window = Settings(self)  # create window if its None or destroyed
         else:
-            self.font.configure(size = 2)
-    def on_ctrl_plus(self):
-        if self.font.cget('size') > 1:
-            self.font.configure(size = self.font.cget('size') + 1)
-        else:
-            self.font.configure(size = 2)
-  
+            self.toplevel_window.focus()
+ 
     def confi_textcolor(self):  
         pick_color = AskColor() # open the color picker
         color = pick_color.get()
@@ -123,13 +115,28 @@ class App(customtkinter.CTk):
         self.textbox.configure(state='normal')
         self.textbox.insert("end",'GPT:')
         self.textbox.configure(state='disable')
+        is_coding = False
         # Call the modified process_gpt_request function and handle the streamed response
         for part in process_gpt_request(chat):
-            self.textbox.configure(state='normal') 
-            self.textbox.insert("end", part) 
-            self.textbox.configure(state='disable') 
-            self.textbox.see("end") # Auto-scroll to the end of the text box self.textbox_1.see("end") # Auto-scroll to the end of the textbox_1 self.update_idletasks() 
+            if "```" in part:
+                is_coding = not is_coding
+                continue
+
+            if not is_coding:
+                self.textbox.configure(state='normal') 
+                self.textbox.insert("end", part) 
+                self.textbox.configure(state='disable') 
+                self.textbox.see("end") # Auto-scroll to the end of the text box self.textbox_1.see("end") # Auto-scroll to the end of the textbox_1 self.update_idletasks() 
+            else:
+                self.textbox.configure(state='normal') 
+                self.textbox.insert("end", part) 
+                self.hightlight.update()
+                self.textbox.configure(state='disable') 
+                self.textbox.see("end")
+        
         self.is_prompting = False
+
+
     def prompt(self):
         if not self.is_prompting:
             chat = self.entry.get()
@@ -141,14 +148,10 @@ class App(customtkinter.CTk):
             threading.Thread(target=self.stream_gpt_response, args=(chat,)).start()
         
 
-
-
-
 if __name__ == "__main__":
     app = App()
     # sv_ttk.set_theme("light")
     # pywinstyles.apply_style(app, style = 'aero')
     app.mainloop()
     keyboard.wait()
-
             
