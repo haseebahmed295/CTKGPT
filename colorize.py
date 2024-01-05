@@ -1,3 +1,4 @@
+import re
 from tkinter import *
 from collections import deque
  
@@ -12,13 +13,17 @@ class Text_hightlighter:
  
         self.T1 = Text
  
-        self.T1.tag_config("orange", foreground = "orange")
-        self.T1.tag_config("blue", foreground = "blue")
-        self.T1.tag_config("purple", foreground = "purple")
-        self.T1.tag_config("green", foreground = "green")
-        self.T1.tag_config("red", foreground = "red")
+        self.T1.tag_config("orange", foreground = "orange", background = "gray")
+        self.T1.tag_config("blue", foreground = "blue", background = "gray")
+        self.T1.tag_config("purple", foreground = "purple", background = "gray")
+        self.T1.tag_config("green", foreground = "green", background = "gray")
+        self.T1.tag_config("red", foreground = "red", background = "gray")
+        self.T1.tag_config("gray_background", background = "black")
+
  
         self.tags = ["orange", "blue", "purple", "green", "red"]
+
+        
  
         self.wordlist = [ ["class", "def", "for", "if", "else", "elif", "import", "from", "as", "break", "while"],
                           ["int", "string", "float", "bool", "__init__"],
@@ -76,7 +81,7 @@ class Text_hightlighter:
         end = "end"
         my_count = IntVar()
     
-        regex_patterns = [r'".*"', r'#.*']
+        regex_patterns = [r'"."', r'#.']
     
         for pattern in regex_patterns:
             self.T1.mark_set("start", start)
@@ -89,12 +94,12 @@ class Text_hightlighter:
     
                 if index == "":
                     break
-    
+                    
                 if num == 1:
                     self.T1.tag_add(self.tags[4], index, index + " lineend")
                 elif num == 0:
                     self.T1.tag_add(self.tags[3], index, f"{index}+{my_count.get()}c")
-    
+
                 self.T1.mark_set("start", f"{index}+{my_count.get()}c")
  
     def indent(self, widget):
@@ -145,4 +150,6 @@ class Text_hightlighter:
         self.stack.append(self.T1.get("1.0", "end - 1c"))
         if self.stackcursor < 9: self.stackcursor += 1
  
-                      
+    def insert_code(self ,text_box , part):
+        text_box.insert("end", part , 'gray_background')
+        

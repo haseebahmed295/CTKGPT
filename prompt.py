@@ -30,7 +30,7 @@ def process_gpt_request(prompt_text):
     # Using automatic a provider for the given model
     ## Streamed completion
     response = g4f.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model=g4f.models.gpt_4_turbo,
         messages=messages,
         stream=True,
     )
@@ -39,19 +39,13 @@ def process_gpt_request(prompt_text):
         yield message
         full_response.append(message)
     
-    full = ''.join(full_response)
+    # full_response = ''.join(full_response)
         # time.sleep(0.1) # Simulate delay between chunks
     chat_history.append({
         'prompt': prompt_text,
-        'response': full
+        'response': full_response
     })
 
     # Save the updated chat history to the file
     with open('chat_history.json', 'w') as f:
         json.dump(chat_history, f)
-
-def detect_python_code(text):
-    is_code = False
-    if '```' in text:
-        is_code = not is_code
-    return is_code

@@ -1,3 +1,4 @@
+import json
 import threading
 import tkinter
 import customtkinter
@@ -71,8 +72,9 @@ class App(customtkinter.CTk):
         self.font = customtkinter.CTkFont(size = 15)
         self.textbox = customtkinter.CTkTextbox(self ,font=self.font , state = 'disable' , wrap = 'word')                        
         self.textbox.grid(row=0, column=1,columnspan=3,rowspan = 3, padx=(10, 10), pady=( 10, 0) ,sticky="nsew")
-        # self.textbox_1 = customtkinter.CTkTextbox(self.textbox , height = self.textbox.cget('height') ,font=font , fg_color = 'green')
-        # self.textbox_1.grid(row=1, column=0, padx=(10, 10), pady=(10, 0) ,sticky="nsew")
+
+        # self.textbox_1 = customtkinter.CTkTextbox(self.textbox , height = self.textbox.cget('height') ,font=self.font , bg_color='gray')
+        # self.textbox_1.grid(row=0, column=1, padx=(20, 20), pady=(20, 20) ,sticky="nsew")
 
         self.hightlight = Text_hightlighter(self, self.textbox)
 
@@ -81,6 +83,7 @@ class App(customtkinter.CTk):
         op.add_option(option="Settings" ,command=self.open_settings)
 
         self.toplevel_window = None 
+        self.load_gpt_response()
 
     def open_settings(self):
         if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
@@ -108,6 +111,29 @@ class App(customtkinter.CTk):
         self.textbox.configure(state = 'normal')
         self.textbox.delete('1.0', 'end')
         self.textbox.configure(state = 'disable')
+
+    def load_gpt_response(self):
+        with open('chat_history.json', 'r') as f:
+            data = json.load(f)
+        self.textbox.configure(state='normal')
+        for item in data:
+            self.textbox.insert("end", f'You: {item["prompt"]}\n') 
+            self.textbox.insert("end", f'Gpt:') 
+            is_coding = False
+        # Call the modified process_gpt_request function and handle the streamed response
+            for part in item["response"]:
+                if "```python" in part or "``" in part:
+                    is_coding = not is_coding
+                    continue
+                if '`\n' in part:
+                    continue
+                if is_coding:
+                    self.hightlight.insert_code(self.textbox,part)
+                else:
+                    self.textbox.insert("end", part) 
+
+        self.hightlight.update()    
+        self.textbox.configure(state='disable')
     
 
     def stream_gpt_response(self, chat):
@@ -118,24 +144,29 @@ class App(customtkinter.CTk):
         is_coding = False
         # Call the modified process_gpt_request function and handle the streamed response
         for part in process_gpt_request(chat):
-            if "```" in part:
+            print(part)
+            if "```python" in part or "``" in part:
                 is_coding = not is_coding
                 continue
-
-            if not is_coding:
-                self.textbox.configure(state='normal') 
-                self.textbox.insert("end", part) 
-                self.textbox.configure(state='disable') 
-                self.textbox.see("end") # Auto-scroll to the end of the text box self.textbox_1.see("end") # Auto-scroll to the end of the textbox_1 self.update_idletasks() 
+            if '`\n' in part:
+                continue
+            self.textbox.configure(state='normal') 
+            if is_coding:
+                self.hightlight.insert_code(self.textbox,part)
             else:
-                self.textbox.configure(state='normal') 
                 self.textbox.insert("end", part) 
-                self.hightlight.update()
-                self.textbox.configure(state='disable') 
-                self.textbox.see("end")
+            self.hightlight.update()
+            self.textbox.configure(state='disable') 
+            self.textbox.see("end")
+
+            # self.textbox.configure(state='normal') 
+            # self.hightlight.insert_code(self.textbox,part)
+            # # self.textbox.insert("end", part)
+            # self.hightlight.update() 
+            # self.textbox.configure(state='disable') 
+            # self.textbox.see("end")
         
         self.is_prompting = False
-
 
     def prompt(self):
         if not self.is_prompting:
