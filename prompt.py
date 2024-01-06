@@ -49,3 +49,29 @@ def process_gpt_request(prompt_text):
     # Save the updated chat history to the file
     with open('chat_history.json', 'w') as f:
         json.dump(chat_history, f)
+
+def clear_chat_history():
+    try:
+        # Read existing data from the file
+        with open('chat_history.json', 'r') as f:
+            data = json.load(f)
+
+        # Check if the file is empty
+        if not data:
+            print("No chat history")
+            return
+
+        # Remove all items from the data list
+        data.clear()
+
+        # Write the updated data back to the file
+        with open('chat_history.json', 'w') as f:
+            json.dump(data, f)
+
+    except FileNotFoundError:
+        # If the file doesn't exist, write an empty list to it
+        with open('chat_history.json', 'w') as f:
+            json.dump([], f)
+        print("No chat history")
+    except json.decoder.JSONDecodeError:
+        print("Error decoding JSON")

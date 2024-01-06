@@ -6,7 +6,7 @@ import keyboard
 from colorize import Text_hightlighter
 from keys import KeyboardHandler
 import sv_ttk
-from prompt import process_gpt_request
+from prompt import clear_chat_history, process_gpt_request
 from CTkColorPicker import *
 from CTkMenuBar import *
 import pywinstyles
@@ -82,8 +82,6 @@ class App(customtkinter.CTk):
                                 )
         
         self.textbox.tag_config('gpt', justify='left', foreground='green' , background = 'gray',
-                                lmargin1 = 20 ,  lmargin2 = 20,
-                                rmargin = 20
                                 )
         # self.textbox_1 = customtkinter.CTkTextbox(self.textbox , height = self.textbox.cget('height') ,font=self.font , bg_color='gray')
         # self.textbox_1.grid(row=0, column=1, padx=(20, 20), pady=(20, 20) ,sticky="nsew")
@@ -121,19 +119,13 @@ class App(customtkinter.CTk):
         new_scaling_float = int(new_scaling.replace("%", "")) / 100
         customtkinter.set_widget_scaling(new_scaling_float)
 
+
     def clear_chat(self):
-        self.textbox.configure(state = 'normal')
-        self.textbox.delete('1.0', 'end')
-        self.textbox.configure(state = 'disable')
-        try:
-            with open('chat_history.json', 'w') as f:
-                data = json.load(f)
-                for item in data:
-                    data.remove(item)
-                    json.dump(data, f)
-        except json.decoder.JSONDecodeError:
-            print("No chat history")
-            return
+        if not self.is_prompting:
+            self.textbox.configure(state='normal')
+            self.textbox.delete('1.0', 'end')
+            self.textbox.configure(state='disable')
+            clear_chat_history()
 
     def load_gpt_response(self):
         try:
@@ -160,7 +152,7 @@ class App(customtkinter.CTk):
                         start_index = self.textbox.index("insert")
                     is_coding = not is_coding
                     continue
-                if '`\n' in part or part=='\n' :
+                if '`\n' in part:
                     continue
 
 
@@ -173,16 +165,18 @@ class App(customtkinter.CTk):
                     code_index.append((start_index,end_index))
                     end_index = None
                     start_index = None
-                    self.hightlight.update(code_index) 
             self.textbox.insert("end", '\n')
+        self.hightlight.update(code_index) 
         
+        self.textbox.configure(state='disable')
     
 
     def stream_gpt_response(self, chat):
         self.is_prompting = True
         self.textbox.configure(state='normal')
-        self.textbox.insert("end", f'\nYou: {chat}\n', 'you')  # 'you' is a tag for styling
-        self.textbox.insert("end", 'GPT:', 'gpt')  # 'gpt' is a tag for styling
+        self.textbox.insert("end", f'You: {chat}\n', 'you')  # 'you' is a tag for styling
+        self.textbox.insert("end", 'GPT:', 'gpt')
+        self.textbox.see("end")  # 'gpt' is a tag for styling
         self.textbox.configure(state='disable')
 
         code_index = []
@@ -213,11 +207,14 @@ class App(customtkinter.CTk):
                 end_index = None
                 start_index = None
                 self.hightlight.update(code_index)
-
+            
             self.textbox.configure(state='disable')
             self.textbox.see("end")
 
         self.is_prompting = False
+        self.textbox.configure(state='normal')
+        self.textbox.insert("end", '\n')
+        self.textbox.configure(state='disable')
 
     def prompt(self):
         if not self.is_prompting:

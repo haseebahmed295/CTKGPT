@@ -5,14 +5,15 @@ import re
 from tkinter import messagebox
 from tkinter.font import Font
 import textwrap
+import customtkinter
 
-root = Tk()
-root.config(bg="lightblue")
+root = customtkinter.CTk()
+# root.config(bg="lightblue")
 root.geometry('410x600+400+100')
 
 #ana ekran
-canvas = Canvas(root, width=200, height=200,bg="white")
-canvas.grid(row=0,column=0,columnspan=2)
+canvas = customtkinter.CTkCanvas(root , bg="white")
+canvas.grid(row=0,column=0,columnspan=2 ,padx=(10, 10), pady=( 10, 0) ,sticky="nsew")
 canvas.place(x=10, y=10, width=390, height=530)
 
 bubbles = []
@@ -20,12 +21,11 @@ bubbles = []
 class BotBubble:
     def __init__(self,master,message=""):
         self.master = master
-        self.frame = Frame(master,bg="light green")
-        self.i = self.master.create_window(70,490,window=self.frame )       
-        Label(self.frame,text=datetime.now().strftime("%d-%m-%Y %X"),font=("Helvetica", 7),bg="light green").grid(row=0,column=0,sticky="w",padx=5) #tarih saat        
-        Label(self.frame, text=textwrap.fill(message, 25), font=("Helvetica", 9),bg="light green").grid(row=1, column=0,sticky="w",padx=5,pady=3)
+        self.frame = customtkinter.CTkFrame(master , bg_color="transparent", fg_color="light green")
+        self.i = self.master.create_window(70,490,window=self.frame , anchor="w")       
+        customtkinter.CTkLabel(self.frame,text=datetime.now().strftime("%d-%m-%Y %X"),bg_color="light green").grid(row=0,column=0,sticky="w",padx=5) #tarih saat        
+        customtkinter.CTkLabel(self.frame, text=textwrap.fill(message, 25),bg_color="light green").grid(row=1, column=0,sticky="w",padx=5,pady=3)
         root.update_idletasks()
-        self.master.create_polygon(self.draw_triangle(self.i), fill="light green", outline="light green")
 
 
 
@@ -40,14 +40,12 @@ def send_message():
     bubbles.append(a)
 
 #mesaj yazma alanı
-entry = Entry(root,width=26, font=("Helvetica", 10))
-entry.place(x=10, y=550, width=290, height=40)
+entry = customtkinter.CTkEntry(root,width=26, font=("Helvetica", 10))
+entry.place(x=10, y=550)
 
 
 #buton
-buton = Button(root, width=10, height=2, 
-relief='raised',state='active',command=send_message)
-buton.config(text='GÖNDER', bg='lightblue', font='Verdana 8 bold')
-buton.place(x=310, y=550)
+buton = customtkinter.CTkButton(root,command=send_message , text='GÖNDER', bg_color='lightblue')
+buton.grid(row=5, column=3, padx=(10, 20), pady=(20, 20), sticky="nsew")
 
 root.mainloop()

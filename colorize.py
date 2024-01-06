@@ -19,7 +19,7 @@ class Text_hightlighter:
         self.T1.tag_config("green", foreground = "green")
         self.T1.tag_config("red", foreground = "red")
 
-        self.T1.tag_config("gray_background", background = "gray")
+        self.T1.tag_config("gray_background", background = "#454242")
 
  
         self.tags = ["blue", "orange", "purple", "red" , "green"]
