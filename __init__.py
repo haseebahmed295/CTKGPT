@@ -13,7 +13,7 @@ import pywinstyles
 from options import Settings
 
 customtkinter.set_appearance_mode("Light")  # Modes: "System" (standard), "Dark", "Light"
-customtkinter.set_default_color_theme("dark-blue")  # Themes: "blue" (standard), "green", "dark-blue"
+customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
 
 class App(customtkinter.CTk):
@@ -22,6 +22,7 @@ class App(customtkinter.CTk):
         super().__init__()
         self.is_prompting = False
         self.keyboard_handler = KeyboardHandler(self)
+        
 
         self.title('GPT Tempslate')
         self.geometry(f"{1100}x{580}")
@@ -73,6 +74,17 @@ class App(customtkinter.CTk):
         self.textbox = customtkinter.CTkTextbox(self ,font=self.font , state = 'disable' , wrap = 'word')                        
         self.textbox.grid(row=0, column=1,columnspan=3,rowspan = 3, padx=(10, 10), pady=( 10, 0) ,sticky="nsew")
 
+        self.textbox.tag_config('you', justify='right', foreground='blue' , background = 'yellow' ,
+                                bgstipple = 'gray25',
+                                lmargin1 = 20 ,  lmargin2 = 20,
+                                rmargin = 20 
+                                
+                                )
+        
+        self.textbox.tag_config('gpt', justify='left', foreground='green' , background = 'gray',
+                                lmargin1 = 20 ,  lmargin2 = 20,
+                                rmargin = 20
+                                )
         # self.textbox_1 = customtkinter.CTkTextbox(self.textbox , height = self.textbox.cget('height') ,font=self.font , bg_color='gray')
         # self.textbox_1.grid(row=0, column=1, padx=(20, 20), pady=(20, 20) ,sticky="nsew")
 
@@ -83,7 +95,9 @@ class App(customtkinter.CTk):
         op.add_option(option="Settings" ,command=self.open_settings)
 
         self.toplevel_window = None 
-        self.load_gpt_response()
+        self.load_response_thread = threading.Thread(target=self.load_gpt_response)
+        self.load_response_thread .start()
+
 
     def open_settings(self):
         if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
@@ -111,73 +125,106 @@ class App(customtkinter.CTk):
         self.textbox.configure(state = 'normal')
         self.textbox.delete('1.0', 'end')
         self.textbox.configure(state = 'disable')
+        try:
+            with open('chat_history.json', 'w') as f:
+                data = json.load(f)
+                for item in data:
+                    data.remove(item)
+                    json.dump(data, f)
+        except json.decoder.JSONDecodeError:
+            print("No chat history")
+            return
 
     def load_gpt_response(self):
-        with open('chat_history.json', 'r') as f:
-            data = json.load(f)
+        try:
+            with open('chat_history.json', 'r') as f:
+                data = json.load(f)
+        except json.decoder.JSONDecodeError:
+            print("No chat history")
+            return
         self.textbox.configure(state='normal')
+        code_index =[]
         for item in data:
-            self.textbox.insert("end", f'You: {item["prompt"]}\n') 
-            self.textbox.insert("end", f'Gpt:') 
+            self.textbox.insert("end", f'You: {item["prompt"]}\n' , 'you') 
+            self.textbox.insert("end", f'Gpt: ' , 'gpt') 
             is_coding = False
-        # Call the modified process_gpt_request function and handle the streamed response
+            end_index = None
+            start_index = None
+
+
             for part in item["response"]:
                 if "```python" in part or "``" in part:
+                    if is_coding:
+                        end_index = self.textbox.index("end")
+                    else:   
+                        start_index = self.textbox.index("insert")
                     is_coding = not is_coding
                     continue
-                if '`\n' in part:
+                if '`\n' in part or part=='\n' :
                     continue
+
+
                 if is_coding:
                     self.hightlight.insert_code(self.textbox,part)
                 else:
                     self.textbox.insert("end", part) 
 
-        self.hightlight.update()    
-        self.textbox.configure(state='disable')
+                if end_index and start_index:
+                    code_index.append((start_index,end_index))
+                    end_index = None
+                    start_index = None
+                    self.hightlight.update(code_index) 
+            self.textbox.insert("end", '\n')
+        
     
 
     def stream_gpt_response(self, chat):
         self.is_prompting = True
         self.textbox.configure(state='normal')
-        self.textbox.insert("end",'GPT:')
+        self.textbox.insert("end", f'\nYou: {chat}\n', 'you')  # 'you' is a tag for styling
+        self.textbox.insert("end", 'GPT:', 'gpt')  # 'gpt' is a tag for styling
         self.textbox.configure(state='disable')
+
+        code_index = []
         is_coding = False
+        end_index = None
+        start_index = None
+
         # Call the modified process_gpt_request function and handle the streamed response
         for part in process_gpt_request(chat):
-            print(part)
             if "```python" in part or "``" in part:
+                if is_coding:
+                    end_index = self.textbox.index("end")
+                else:
+                    start_index = self.textbox.index("insert")
                 is_coding = not is_coding
                 continue
             if '`\n' in part:
                 continue
-            self.textbox.configure(state='normal') 
+
+            self.textbox.configure(state='normal')
             if is_coding:
-                self.hightlight.insert_code(self.textbox,part)
+                self.hightlight.insert_code(self.textbox, part)
             else:
-                self.textbox.insert("end", part) 
-            self.hightlight.update()
-            self.textbox.configure(state='disable') 
+                self.textbox.insert("end", part)
+
+            if end_index and start_index:
+                code_index.append((start_index, end_index))
+                end_index = None
+                start_index = None
+                self.hightlight.update(code_index)
+
+            self.textbox.configure(state='disable')
             self.textbox.see("end")
 
-            # self.textbox.configure(state='normal') 
-            # self.hightlight.insert_code(self.textbox,part)
-            # # self.textbox.insert("end", part)
-            # self.hightlight.update() 
-            # self.textbox.configure(state='disable') 
-            # self.textbox.see("end")
-        
         self.is_prompting = False
 
     def prompt(self):
         if not self.is_prompting:
             chat = self.entry.get()
             self.entry.delete(0, "end")
-            self.textbox.configure(state='normal')
-            self.textbox.insert("end", f'\nYou: {chat}\n')
-            self.textbox.configure(state='disable')
-            # Start the streaming in a separate thread to keep the GUI responsive
-            threading.Thread(target=self.stream_gpt_response, args=(chat,)).start()
-        
+            self.stream_response_thread = threading.Thread(target=self.stream_gpt_response, args=(chat,))
+            self.stream_response_thread.start()
 
 if __name__ == "__main__":
     app = App()
