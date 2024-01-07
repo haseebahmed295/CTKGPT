@@ -19,6 +19,12 @@ class Text_hightlighter:
         self.T1.tag_config("green", foreground = "green")
         self.T1.tag_config("red", foreground = "red")
 
+        self.T1.tag_config('you', foreground='blue' , background = 'yellow' ,
+                                bgstipple = 'gray25',)
+        
+        self.T1.tag_config('gpt', foreground='green' , background = 'gray',
+                                )
+
         self.T1.tag_config("gray_background", background = "#454242")
 
  
@@ -84,13 +90,13 @@ class Text_hightlighter:
         regex_patterns = [r'\".*?\"',r'\'.*?\'', r'#.']
     
         for pattern in regex_patterns:
-            self.T1.mark_set("start", start)
-            self.T1.mark_set("end", end)
+            self.T1.mark_set("start_mark", start)
+            self.T1.mark_set("end_mark", end)
     
             num = regex_patterns.index(pattern)
     
             while True:
-                index = self.T1.search(pattern, "start", "end", count=my_count, regexp=True)
+                index = self.T1.search(pattern, "start_mark", "end_mark", count=my_count, regexp=True)
     
                 if index == "":
                     break
@@ -100,7 +106,7 @@ class Text_hightlighter:
                 elif num == 0 or num == 1:
                     self.T1.tag_add(self.tags[3], index, f"{index}+{my_count.get()}c")
 
-                self.T1.mark_set("start", f"{index}+{my_count.get()}c")
+                self.T1.mark_set("start_mark", f"{index}+{my_count.get()}c")
  
     def indent(self, widget):
 

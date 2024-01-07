@@ -10,7 +10,8 @@ from prompt import clear_chat_history, process_gpt_request
 from CTkColorPicker import *
 from CTkMenuBar import *
 import pywinstyles
-from options import Settings
+from options import Settings , Models
+
 
 customtkinter.set_appearance_mode("Light")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -22,9 +23,11 @@ class App(customtkinter.CTk):
         super().__init__()
         self.is_prompting = False
         self.keyboard_handler = KeyboardHandler(self)
+        self.Model = None
+        self.Provider = None
         
 
-        self.title('GPT Tempslate')
+        self.title('GPT')
         self.geometry(f"{1100}x{580}")
         
         # configure grid layout (4x4)
@@ -37,7 +40,7 @@ class App(customtkinter.CTk):
         self.sidebar_frame = customtkinter.CTkFrame(self, width=140, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
-        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="GPT", font=customtkinter.CTkFont(size=20, weight="bold"))
+        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="Chat App", font=customtkinter.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
         self.sidebar_button_1 = tkinter.ttk.Button(self.sidebar_frame, text = 'Clear Chat' , command=self.clear_chat)
         self.sidebar_button_1.grid(row=1, column=0, padx=20, pady=10)
@@ -74,15 +77,7 @@ class App(customtkinter.CTk):
         self.textbox = customtkinter.CTkTextbox(self ,font=self.font , state = 'disable' , wrap = 'word')                        
         self.textbox.grid(row=0, column=1,columnspan=3,rowspan = 3, padx=(10, 10), pady=( 10, 0) ,sticky="nsew")
 
-        self.textbox.tag_config('you', justify='right', foreground='blue' , background = 'yellow' ,
-                                bgstipple = 'gray25',
-                                lmargin1 = 20 ,  lmargin2 = 20,
-                                rmargin = 20 
-                                
-                                )
         
-        self.textbox.tag_config('gpt', justify='left', foreground='green' , background = 'gray',
-                                )
         # self.textbox_1 = customtkinter.CTkTextbox(self.textbox , height = self.textbox.cget('height') ,font=self.font , bg_color='gray')
         # self.textbox_1.grid(row=0, column=1, padx=(20, 20), pady=(20, 20) ,sticky="nsew")
 
@@ -93,8 +88,8 @@ class App(customtkinter.CTk):
         op.add_option(option="Settings" ,command=self.open_settings)
 
         self.toplevel_window = None 
-        self.load_response_thread = threading.Thread(target=self.load_gpt_response)
-        self.load_response_thread .start()
+        self.load_response_thread = threading.Thread(target=self.load_setup)
+        self.load_response_thread.start()
 
 
     def open_settings(self):
@@ -119,7 +114,6 @@ class App(customtkinter.CTk):
         new_scaling_float = int(new_scaling.replace("%", "")) / 100
         customtkinter.set_widget_scaling(new_scaling_float)
 
-
     def clear_chat(self):
         if not self.is_prompting:
             self.textbox.configure(state='normal')
@@ -127,7 +121,18 @@ class App(customtkinter.CTk):
             self.textbox.configure(state='disable')
             clear_chat_history()
 
-    def load_gpt_response(self):
+    def load_setup(self):
+
+        try:
+            with open('settings.json', 'r') as f:
+                data = json.load(f)
+            for key , value in data.items():
+                if key == "Model":
+                    self.Model = value
+                elif key == "Provider":
+                    self.Provider = value
+        except json.decoder.JSONDecodeError:
+            print("No Settings Found") 
         try:
             with open('chat_history.json', 'r') as f:
                 data = json.load(f)
@@ -138,7 +143,7 @@ class App(customtkinter.CTk):
         code_index =[]
         for item in data:
             self.textbox.insert("end", f'You: {item["prompt"]}\n' , 'you') 
-            self.textbox.insert("end", f'Gpt: ' , 'gpt') 
+            self.textbox.insert("end", f'AI: ' , 'gpt') 
             is_coding = False
             end_index = None
             start_index = None
@@ -153,7 +158,7 @@ class App(customtkinter.CTk):
                     is_coding = not is_coding
                     continue
                 if '`\n' in part:
-                    continue
+                    part = part.replace("`\n","\n")
 
 
                 if is_coding:
@@ -167,25 +172,21 @@ class App(customtkinter.CTk):
                     start_index = None
             self.textbox.insert("end", '\n')
         self.hightlight.update(code_index) 
-        
         self.textbox.configure(state='disable')
-    
 
+    
+        
+    
     def stream_gpt_response(self, chat):
         self.is_prompting = True
-        self.textbox.configure(state='normal')
-        self.textbox.insert("end", f'You: {chat}\n', 'you')  # 'you' is a tag for styling
-        self.textbox.insert("end", 'GPT:', 'gpt')
-        self.textbox.see("end")  # 'gpt' is a tag for styling
-        self.textbox.configure(state='disable')
-
+       
         code_index = []
         is_coding = False
         end_index = None
         start_index = None
 
         # Call the modified process_gpt_request function and handle the streamed response
-        for part in process_gpt_request(chat):
+        for part in process_gpt_request(chat,self.Model,self.Provider):
             if "```python" in part or "``" in part:
                 if is_coding:
                     end_index = self.textbox.index("end")
@@ -194,7 +195,7 @@ class App(customtkinter.CTk):
                 is_coding = not is_coding
                 continue
             if '`\n' in part:
-                continue
+                part = part.replace("`\n","\n")
 
             self.textbox.configure(state='normal')
             if is_coding:
@@ -212,14 +213,16 @@ class App(customtkinter.CTk):
             self.textbox.see("end")
 
         self.is_prompting = False
-        self.textbox.configure(state='normal')
-        self.textbox.insert("end", '\n')
-        self.textbox.configure(state='disable')
 
     def prompt(self):
         if not self.is_prompting:
             chat = self.entry.get()
             self.entry.delete(0, "end")
+            self.textbox.configure(state='normal')
+            self.textbox.insert("end", f'You: {chat}\n', 'you')  # 'you' is a tag for styling
+            self.textbox.insert("end", f'{self.Model}: ', 'gpt')
+            self.textbox.configure(state='disable')
+
             self.stream_response_thread = threading.Thread(target=self.stream_gpt_response, args=(chat,))
             self.stream_response_thread.start()
 

@@ -4,7 +4,11 @@ import os
 import json
 import time
 
-def process_gpt_request(prompt_text):
+
+
+
+
+def process_gpt_request(prompt_text , model , provider = None):
     # g4f.debug.logging = True # Enable debug logging
     # g4f.debug.version_check = False # Disable automatic version checking
 
@@ -30,7 +34,7 @@ def process_gpt_request(prompt_text):
     # Using automatic a provider for the given model
     ## Streamed completion
     response = g4f.ChatCompletion.create(
-        model=g4f.models.gpt_4_turbo,
+        model=model,
         messages=messages,
         stream=True,
     )
