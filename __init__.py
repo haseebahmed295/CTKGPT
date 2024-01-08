@@ -1,6 +1,7 @@
 import json
+import textwrap
 import threading
-import tkinter
+
 import customtkinter
 import keyboard
 from colorize import Text_hightlighter
@@ -14,8 +15,49 @@ from options import Settings , Models
 
 
 customtkinter.set_appearance_mode("Light")  # Modes: "System" (standard), "Dark", "Light"
-customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
+# customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
+
+class BotBubble:
+    def __init__(self, root, master, align="left"):
+        self.frame = customtkinter.CTkFrame(master, fg_color="lightgreen")
+        padx=20; pady=(20, 10)
+        self.m = root
+        if align == "left":
+            self.text = customtkinter.CTkTextbox(
+            self.frame, 
+            wrap = "word",
+            font=root.font,
+            # width=1200,
+            bg_color="lightgreen",
+        )
+            r = len(root.bubbles)
+            c = 0
+            # columnspan = 4
+            master.grid_columnconfigure(c, weight=1)
+            self.frame.grid(row=r ,column=c,padx=padx, pady=pady , sticky="w")
+            customtkinter.CTkLabel(self.frame, text="Response").grid(row=r, column=c , sticky="w")
+            self.text.grid(row=r+1, column=c, sticky="w")
+        elif align == "right":
+            self.text = customtkinter.CTkTextbox(
+            self.frame, 
+            wrap = "word",
+            font=root.font,
+            height=30,
+            bg_color="lightgreen",
+        )
+            r = len(root.bubbles)
+            c = 0
+            # master.grid_columnconfigure(c, weight=1)
+            self.frame.grid(row=r, column=c,padx=padx, pady=pady, sticky="e")
+            customtkinter.CTkLabel(self.frame, text="Prompt").grid(row=r, column=c, sticky="w")
+            self.text.grid(row=r+1, column=c, sticky="e")
+
+    def on_text_change(self, event = None):
+        # Get the current content of the textbox
+        pass
+
+  
 
 class App(customtkinter.CTk):
 
@@ -25,7 +67,14 @@ class App(customtkinter.CTk):
         self.keyboard_handler = KeyboardHandler(self)
         self.Model = None
         self.Provider = None
-        
+        self.bubbles = []
+        with open('settings.json', 'r') as f:
+                data = json.load(f)
+        for key , value in data.items():
+            if key == "Model":
+                self.Model = value
+            elif key == "Provider":
+                self.Provider = value
 
         self.title('GPT')
         self.geometry(f"{1100}x{580}")
@@ -42,10 +91,10 @@ class App(customtkinter.CTk):
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
         self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="Chat App", font=customtkinter.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
-        self.sidebar_button_1 = tkinter.ttk.Button(self.sidebar_frame, text = 'Clear Chat' , command=self.clear_chat)
+        self.sidebar_button_1 = customtkinter.CTkButton(self.sidebar_frame, text = 'Clear Chat' , command=self.clear_chat)
         self.sidebar_button_1.grid(row=1, column=0, padx=20, pady=10)
-        self.color_button = customtkinter.CTkButton(self.sidebar_frame, text="Select color", command=self.confi_textcolor)
-        self.color_button.grid(row=4, column=0, padx=20, pady=(10, 10))
+        self.textolor_button = customtkinter.CTkButton(self.sidebar_frame, text="Select color", command=self.confi_textcolor)
+        self.textolor_button.grid(row=4, column=0, padx=20, pady=(10, 10))
 
         # self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, command=self.sidebar_button_event)
         # self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
@@ -62,10 +111,13 @@ class App(customtkinter.CTk):
         self.scaling_optionemenu = customtkinter.CTkOptionMenu(self.sidebar_frame, values=["80%", "90%", "100%", "110%", "120%"],
                                                                command=self.change_scaling_event)
         self.scaling_optionemenu.grid(row=8, column=0, padx=20, pady=(10, 20))
+        self.option = customtkinter.CTkButton(self.sidebar_frame, text="Settings",
+                                                               command=self.open_settings)
+        self.option.grid(row=9, column=0, padx=20, pady=(10, 20))
 
         # create main entry and button
-        self.entry = customtkinter.CTkEntry(self, placeholder_text="Type Here")
-        self.entry.insert(0, "Write some simple python code")# For testing
+        self.entry = customtkinter.CTkTextbox(self,height=40)
+        # self.entry.insert(0, "Write some simple python code")# For testing
         self.entry.grid(row=3, column=1, columnspan=2, padx=(20, 0), pady=(20, 20), sticky="nsew")
 
         self.main_button_1 = customtkinter.CTkButton(master=self, text = 'Prompt', 
@@ -73,23 +125,23 @@ class App(customtkinter.CTk):
         self.main_button_1.grid(row=3, column=3, padx=(10, 20), pady=(20, 20), sticky="nsew")
         
         # create textbox
-        self.font = customtkinter.CTkFont(size = 15)
-        self.textbox = customtkinter.CTkTextbox(self ,font=self.font , state = 'disable' , wrap = 'word')                        
-        self.textbox.grid(row=0, column=1,columnspan=3,rowspan = 3, padx=(10, 10), pady=( 10, 0) ,sticky="nsew")
+        self.font = customtkinter.CTkFont(size = 30)
 
+        self.textbox = customtkinter.CTkScrollableFrame(self,)                        
+        self.textbox.grid(row=0, column=1,columnspan=3,rowspan = 3, padx=(10, 10), pady=( 10, 0) ,sticky="nsew")
         
         # self.textbox_1 = customtkinter.CTkTextbox(self.textbox , height = self.textbox.cget('height') ,font=self.font , bg_color='gray')
         # self.textbox_1.grid(row=0, column=1, padx=(20, 20), pady=(20, 20) ,sticky="nsew")
 
-        self.hightlight = Text_hightlighter(self, self.textbox)
+        # self.hightlight = Text_hightlighter(self, self.textbox)
 
-        self.menu = CTkTitleMenu(self).add_cascade("Options")
-        op = CustomDropdownMenu(widget=self.menu)
-        op.add_option(option="Settings" ,command=self.open_settings)
+        # self.menu = CTkTitleMenu(self , x_offset=100).add_cascade("Options" , fg_color = 'transparent' ,corner_radius = 4 , hover_color = '#bcbcbc')
+        # op = CustomDropdownMenu(widget=self.menu)
+        # op.add_option(option="Settings" ,command=self.open_settings)
 
         self.toplevel_window = None 
-        self.load_response_thread = threading.Thread(target=self.load_setup)
-        self.load_response_thread.start()
+        # self.load_response_thread = threading.Thread(target=self.load_setup)
+        # self.load_response_thread.start()
 
 
     def open_settings(self):
@@ -177,53 +229,60 @@ class App(customtkinter.CTk):
     
         
     
-    def stream_gpt_response(self, chat):
+    def stream_gpt_response(self, chat , bubble):
         self.is_prompting = True
-       
+        hightlight = Text_hightlighter(self, bubble.text)
         code_index = []
         is_coding = False
         end_index = None
         start_index = None
-
+        a = True
         # Call the modified process_gpt_request function and handle the streamed response
         for part in process_gpt_request(chat,self.Model,self.Provider):
             if "```python" in part or "``" in part:
                 if is_coding:
-                    end_index = self.textbox.index("end")
+                    end_index = bubble.text.index("end")
                 else:
-                    start_index = self.textbox.index("insert")
+                    start_index = bubble.text.index("insert")
                 is_coding = not is_coding
                 continue
             if '`\n' in part:
                 part = part.replace("`\n","\n")
 
-            self.textbox.configure(state='normal')
+            bubble.text.configure(state='normal')
             if is_coding:
-                self.hightlight.insert_code(self.textbox, part)
+                hightlight.insert_code(bubble.text, part)
             else:
-                self.textbox.insert("end", part)
+                bubble.text.insert("end", part)
 
             if end_index and start_index:
                 code_index.append((start_index, end_index))
                 end_index = None
                 start_index = None
-                self.hightlight.update(code_index)
+                hightlight.update(code_index)
             
-            self.textbox.configure(state='disable')
-            self.textbox.see("end")
-
+            bubble.text.configure(state='disable')
+            bubble.text.see("end")
+            
+        bubble.on_text_change()
         self.is_prompting = False
 
     def prompt(self):
         if not self.is_prompting:
-            chat = self.entry.get()
-            self.entry.delete(0, "end")
-            self.textbox.configure(state='normal')
-            self.textbox.insert("end", f'You: {chat}\n', 'you')  # 'you' is a tag for styling
-            self.textbox.insert("end", f'{self.Model}: ', 'gpt')
-            self.textbox.configure(state='disable')
+            chat = self.entry.get("0.0", "end")
+            # self.entry.delete(0, "end")
+            self.entry.delete("0.0", "end") 
 
-            self.stream_response_thread = threading.Thread(target=self.stream_gpt_response, args=(chat,))
+            right = BotBubble(self,self.textbox,"right")
+            self.bubbles.append(right)
+            right.text.insert("end", f'You: {chat}\n') 
+
+
+            left = BotBubble(self,self.textbox,"left")
+            self.bubbles.append(left)
+            left.text.insert("end", f'{self.Model}: ')
+
+            self.stream_response_thread = threading.Thread(target=self.stream_gpt_response, args=(chat,left))
             self.stream_response_thread.start()
 
 if __name__ == "__main__":

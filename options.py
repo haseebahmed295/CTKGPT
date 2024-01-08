@@ -7,11 +7,12 @@ class Settings(customtkinter.CTkToplevel):
     def __init__(self, master , *args, **kwargs):
         # sourcery skip: merge-list-append, move-assign-in-block
         super().__init__(master,*args, **kwargs)
+        self.title('Prefrences')
         self.master = master
         # As each frame is created, it is added to this list
         widget_list = []
 
-        self.label = customtkinter.CTkLabel(self, text="Prefrences")
+        self.label = customtkinter.CTkLabel(self, text="Prefrences" , font=customtkinter.CTkFont(size=20, weight="bold"))
         self.label.grid(row=0, column=0, padx=20, pady=20)
         widget_list.append(self.label)
 

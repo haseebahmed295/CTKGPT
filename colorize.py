@@ -158,5 +158,5 @@ class Text_hightlighter:
         if self.stackcursor < 9: self.stackcursor += 1
  
     def insert_code(self ,text_box , part):
-        text_box.insert("end", part , 'gray_background')
+        text_box.insert("end", part , 'gray_background')  
         
