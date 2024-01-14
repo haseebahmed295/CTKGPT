@@ -15,13 +15,11 @@ class KeyboardHandler:
             self.app.font.configure(size = self.app.font.cget('size') - 1)
         else:
             self.app.font.configure(size = 2)
-        for i in self.app.bubbles:
-            i.on_text_change()
+        
 
     def on_ctrl_plus(self):
         if self.app.font.cget('size') > 1:
             self.app.font.configure(size = self.app.font.cget('size') + 1)
         else:
             self.app.font.configure(size = 2)
-        for i in self.app.bubbles:
-            i.on_text_change()
+        
