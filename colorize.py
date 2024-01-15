@@ -19,8 +19,7 @@ class Text_hightlighter:
         self.T1.tag_config("green", foreground = "green")
         self.T1.tag_config("red", foreground = "red")
 
-        self.T1.tag_config('you', foreground='blue' , background = 'yellow' ,
-                                bgstipple = 'gray25',)
+        self.T1.tag_config('you', foreground='blue' , background = 'yellow' )
         
         self.T1.tag_config('gpt', foreground='green' , background = 'gray',
                                 )

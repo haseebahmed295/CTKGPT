@@ -15,62 +15,10 @@ from CTkColorPicker import *
 from CTkMenuBar import *
 import pywinstyles
 from options import Settings , Models
-
+from bubbles import BotBubble
 
 customtkinter.set_appearance_mode("Light")  # Modes: "System" (standard), "Dark", "Light"
-# customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
-
-
-class BotBubble:
-    def __init__(self, root, master, align="left"):
-        r = len(root.bubbles)
-        c = 0
-        padx=20; pady=(20, 10)
-        self.m = root
-
-        self.frame = customtkinter.CTkFrame(master ,  width=800 , corner_radius=5
-        ,height=400,fg_color='white',
-        )
-        if align == "left":
-            self.text = customtkinter.CTkTextbox(self.frame, wrap = "word",font=root.font,
-            activate_scrollbars=False,
-            
-        )
-            self.text.focus()
-            self.frame.grid(row=r, column=c,padx=padx, pady=pady ,sticky="w")
-            customtkinter.CTkLabel(self.frame, text="Response").grid(column =c+1 ,sticky="w" , padx=10)
-            self.text.grid(column =c+1, padx=10, pady=(5, 10))
-
-        elif align == "right":
-            self.text = customtkinter.CTkTextbox(self.frame,wrap = "word",font=root.font,
-            activate_scrollbars=False
-        )
-            
-            self.frame.grid(row=r, column=c,padx=padx, pady=pady, sticky="e")
-            customtkinter.CTkLabel(self.frame, text="Prompt").grid(column =c+1 , sticky="w" , padx=10)
-            self.text.grid(column =c+1 , padx=10, pady=(5, 10))
-
-    def on_text_change(self , textbox):
-        total_char = len(self.text.get('1.0', 'end'))
-        frame = 1050
-        char_size = total_char*self.m.font.actual("size") 
-        single_line = self.m.font.cget('size')+self.m.font.actual("size") 
-
-        if char_size > frame:
-            lines= (math.ceil(char_size/frame) +self.text.get('1.0', 'end').count('\n'))/2
-            print(lines , char_size/frame , self.text.get('1.0', 'end').count('\n'))
-            self.text.configure(width=frame)
-            if lines > 1:
-                self.text.configure(height = lines*single_line)
-            else:
-                self.text.configure(height =  single_line)
-        else:
-            self.text.configure(height = single_line , width=char_size)
-        m  = self.text.get('1.0', 'end').rstrip('\n')
-        self.text.delete("1.0", "end")
-        self.text.insert("end", m)
-    
-
+customtkinter.set_default_color_theme("dark-blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
 class App(customtkinter.CTk):
 
@@ -97,7 +45,6 @@ class App(customtkinter.CTk):
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure((2, 3), weight=0)
         self.grid_rowconfigure((0, 1, 2), weight=1)
-
 
         # create sidebar frame with widgets
         self.sidebar_frame = customtkinter.CTkFrame(self, width=140, corner_radius=0)
@@ -158,7 +105,6 @@ class App(customtkinter.CTk):
         self.load_response_thread = threading.Thread(target=self.load_setup)
         self.load_response_thread.start()
 
-
     def open_settings(self):
         if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
             self.toplevel_window = Settings(self) 
@@ -172,7 +118,6 @@ class App(customtkinter.CTk):
         for i in self.bubbles:
             i.frame.configure(fg_color = color)
         # self.textbox.configure(text_color = color)
-
 
     def open_input_dialog_event(self):
         dialog = customtkinter.CTkInputDialog(text="Type in a number:", title="CTkInputDialog")
@@ -207,6 +152,8 @@ class App(customtkinter.CTk):
         try:
             with open('chat_history.json', 'r') as f:
                 data = json.load(f)
+            if data == []:
+                return
         except json.decoder.JSONDecodeError:
             print("No chat history")
             return
@@ -215,7 +162,7 @@ class App(customtkinter.CTk):
         for item in data:
             right = BotBubble(self,self.textbox,"right")
             self.bubbles.append(right)
-            right.text.insert("end", f'{item["prompt"]}\n' , 'you')
+            right.text.insert("end", f'{item["prompt"]}\n' )
             right.on_text_change(self.textbox) 
             left = BotBubble(self,self.textbox,"left")
             self.bubbles.append(left)
@@ -248,12 +195,9 @@ class App(customtkinter.CTk):
                     start_index = None
                    
             left.on_text_change(self.textbox)
-            hightlight.update(code_index) 
+            hightlight.update(code_index)
         left.text.configure(state='disable')
 
-    
-        
-    
     def stream_gpt_response(self, chat , bubble):
         self.is_prompting = True
         hightlight = Text_hightlighter(self, bubble.text)
@@ -261,9 +205,9 @@ class App(customtkinter.CTk):
         is_coding = False
         end_index = None
         start_index = None
-        a = True
         # Call the modified process_gpt_request function and handle the streamed response
         for part in process_gpt_request(chat,self.Model,self.Provider):
+            self.textbox._parent_canvas.yview_moveto(1.0)
             if "```python" in part or "``" in part:
                 if is_coding:
                     end_index = bubble.text.index("end")
