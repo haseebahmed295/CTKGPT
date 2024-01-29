@@ -1,0 +1,8 @@
+{
+    "Model": "gpt-3.5-turbo",
+    "Bubble_color" : "#FFFFFF",
+    "code_color" : "#ff5d5d",
+    "code_lable": "#737d7d",
+    "font_size" : 15,
+    "theme" : "light"
+}

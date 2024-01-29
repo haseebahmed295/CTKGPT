@@ -1,28 +1,21 @@
 import tkinter as tk
-from tkinter import ttk
-import base64
+
+class ExpandoText(tk.Text):
+    def insert(self, *args, **kwargs):
+        result = tk.Text.insert(self, *args, **kwargs)
+        self.reset_height()
+        return result
+
+    def reset_height(self):
+        height = self.tk.call((self._w, "count", "-update", "-displaylines", "1.0", "end"))
+        self.configure(height=height)
 root = tk.Tk()
-style = ttk.Style()
+text = ExpandoText(root, width=20, wrap="word")
+text.pack(fill="both", expand=True)
 
-borderImageData = '''R0lGODlh...''' # Truncated for brevity, use the full string from the example
-focusBorderImageData = '''R0lGODlh...''' # Truncated for brevity, use the full string from the example
+root.update_idletasks()
+text.insert("1.0", "This is a line of text that will initially be wrapped.")
 
-# Decode the base64-encoded image data
-borderImageData = base64.b64decode(borderImageData)
-focusBorderImageData = base64.b64decode(focusBorderImageData)
+root.after(5000, text.insert, "end", "This is more text")
 
-# Create PhotoImage objects from the decoded image data
-borderImage = tk.PhotoImage(data=borderImageData)
-focusBorderImage = tk.PhotoImage(data=focusBorderImageData)
-style.element_create("RoundedFrame", "image", borderImage,
-                     ("focus", focusBorderImage), border=16, sticky="nsew")
-style.layout("RoundedFrame", [("RoundedFrame", {"sticky": "nsew"})])
-frame1 = ttk.Frame(style="RoundedFrame", padding=10)
-text1 = tk.Text(frame1, borderwidth=0, highlightthickness=0, wrap="word",
-                width=40, height=4)
-text1.pack(fill="both", expand=True)
-text1.bind("<FocusIn>", lambda event: frame1.state(["focus"]))
-text1.bind("<FocusOut>", lambda event: frame1.state(["!focus"]))
-root.configure(background="white")
-frame1.pack(side="top", fill="both", expand=True, padx=20, pady=20)
 root.mainloop()

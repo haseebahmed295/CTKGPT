@@ -1,20 +1,14 @@
 import json
-import math
-import re
-import textwrap
+from  pathlib import Path
 import threading
-import tkinter
-
 import customtkinter
 import keyboard
-from colorize import Text_hightlighter
 from keys import KeyboardHandler
-import sv_ttk
-from prompt import clear_chat_history, process_gpt_request
+from Preferences import Prefrences, Models
+from Settings import Settings
+from prompt import clear_chat_history, insert_text, process_gpt_request
 from CTkColorPicker import *
 from CTkMenuBar import *
-import pywinstyles
-from options import Settings , Models
 from bubbles import BotBubble
 
 customtkinter.set_appearance_mode("Light")  # Modes: "System" (standard), "Dark", "Light"
@@ -26,16 +20,8 @@ class App(customtkinter.CTk):
         super().__init__()
         self.is_prompting = False
         self.keyboard_handler = KeyboardHandler(self)
-        self.Model = None
-        self.Provider = None
         self.bubbles = []
-        with open('settings.json', 'r') as f:
-                data = json.load(f)
-        for key , value in data.items():
-            if key == "Model":
-                self.Model = value
-            elif key == "Provider":
-                self.Provider = value
+        self.settings = Settings(self)
 
         self.title('GPT')
         
@@ -71,15 +57,17 @@ class App(customtkinter.CTk):
         self.scaling_label.grid(row=7, column=0, padx=20, pady=(10, 0))
         self.scaling_optionemenu = customtkinter.CTkOptionMenu(self.sidebar_frame, values=["80%", "90%", "100%", "110%", "120%"],
                                                                command=self.change_scaling_event)
+
         self.scaling_optionemenu.grid(row=8, column=0, padx=20, pady=(10, 20))
         self.option = customtkinter.CTkButton(self.sidebar_frame, text="Settings",
                                                                command=self.open_settings)
         self.option.grid(row=9, column=0, padx=20, pady=(10, 20))
 
         # create main entry and button
-        self.entry = customtkinter.CTkTextbox(self,height=40)
+        self.entry = customtkinter.CTkEntry(self,height=40)
         # self.entry.insert(0, "Write some simple python code")# For testing
         self.entry.grid(row=3, column=1, columnspan=2, padx=(20, 0), pady=(20, 20), sticky="nsew")
+        self.entry.bind('<Return>', self.prompt)
 
         self.main_button_1 = customtkinter.CTkButton(master=self, text = 'Prompt', 
             width=20, text_color=("gray10", "#DCE4EE") , command=self.prompt)
@@ -88,14 +76,14 @@ class App(customtkinter.CTk):
         # create textbox
         self.font = customtkinter.CTkFont(size = 15)
         
-        self.textbox = customtkinter.CTkScrollableFrame(self,)                        
-        self.textbox.grid(row=0, column=1,columnspan=3,rowspan = 3, padx=(10, 10), pady=( 10, 0) ,sticky="nsew")
-        self.textbox.grid_columnconfigure(0, weight=1)
+        self.chat_frame = customtkinter.CTkScrollableFrame(self,)                        
+        self.chat_frame.grid(row=0, column=1,columnspan=3,rowspan = 3, padx=(10, 10), pady=( 10, 0) ,sticky="nsew")
+        self.chat_frame.grid_columnconfigure(0, weight=1)
         
-        # self.textbox_1 = customtkinter.CTkTextbox(self.textbox , height = self.textbox.cget('height') ,font=self.font , bg_color='gray')
-        # self.textbox_1.grid(row=0, column=1, padx=(20, 20), pady=(20, 20) ,sticky="nsew")
+        # self.chat_frame_1 = customtkinter.CTkTextbox(self.chat_frame , height = self.chat_frame.cget('height') ,font=self.font , bg_color='gray')
+        # self.chat_frame_1.grid(row=0, column=1, padx=(20, 20), pady=(20, 20) ,sticky="nsew")
 
-        # self.hightlight = Text_hightlighter(self, self.textbox)
+        # self.hightlight = Text_highlighter(self, self.chat_frame)
 
         # self.menu = CTkTitleMenu(self , x_offset=100).add_cascade("Options" , fg_color = 'transparent' ,corner_radius = 4 , hover_color = '#bcbcbc')
         # op = CustomDropdownMenu(widget=self.menu)
@@ -107,8 +95,7 @@ class App(customtkinter.CTk):
 
     def open_settings(self):
         if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
-            self.toplevel_window = Settings(self) 
-            self.toplevel_window.focus()
+            self.toplevel_window = Prefrences(self)
         else:
             self.toplevel_window.focus()
  
@@ -117,11 +104,7 @@ class App(customtkinter.CTk):
         color = pick_color.get()
         for i in self.bubbles:
             i.frame.configure(fg_color = color)
-        # self.textbox.configure(text_color = color)
-
-    def open_input_dialog_event(self):
-        dialog = customtkinter.CTkInputDialog(text="Type in a number:", title="CTkInputDialog")
-        print("CTkInputDialog:", dialog.get_input())
+        # self.chat_frame.configure(text_color = color)
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
         customtkinter.set_appearance_mode(new_appearance_mode)
@@ -132,131 +115,72 @@ class App(customtkinter.CTk):
 
     def clear_chat(self):
         if not self.is_prompting:
-            for b in self.bubbles:
-                b.text.destroy()
-                b.frame.destroy()
+            for buble in self.bubbles:
+                for i in buble.text_boxes:
+                    i.destroy()
+                buble.frame.destroy()
             clear_chat_history()
 
-    def load_setup(self):
+    def load_setup(self) -> None:
+        """
+        Load setup from settings.json and chat_history.json files.
+        """
+        chat_history_file = Path('prefs/chat_history.json')
 
         try:
-            with open('settings.json', 'r') as f:
+            with chat_history_file.open('r') as f:
                 data = json.load(f)
-            for key , value in data.items():
-                if key == "Model":
-                    self.Model = value
-                elif key == "Provider":
-                    self.Provider = value
-        except json.decoder.JSONDecodeError:
-            print("No Settings Found") 
-        try:
-            with open('chat_history.json', 'r') as f:
-                data = json.load(f)
-            if data == []:
+            if not data:
                 return
         except json.decoder.JSONDecodeError:
             print("No chat history")
             return
 
-        code_index =[]
         for item in data:
-            right = BotBubble(self,self.textbox,"right")
-            self.bubbles.append(right)
-            right.text.insert("end", f'{item["prompt"]}\n' )
-            right.on_text_change(self.textbox) 
-            left = BotBubble(self,self.textbox,"left")
-            self.bubbles.append(left)
-            hightlight = Text_hightlighter(self, left.text)
-            is_coding = False
-            end_index = None
-            start_index = None
+            insert_text(self, item)
 
-
-            for part in item["response"]:
-                if "```python" in part or "``" in part:
-                    if is_coding:
-                        end_index = left.text.index("end")
-                    else:   
-                        start_index = left.text.index("insert")
-                    is_coding = not is_coding
-                    continue
-                if '`\n' in part:
-                    part = part.replace("`\n","\n")
-
-
-                if is_coding:
-                    hightlight.insert_code(left.text,part)
-                else:
-                   left.text.insert("end", part) 
-
-                if end_index and start_index:
-                    code_index.append((start_index,end_index))
-                    end_index = None
-                    start_index = None
-                   
-            left.on_text_change(self.textbox)
-            hightlight.update(code_index)
-        left.text.configure(state='disable')
-
-    def stream_gpt_response(self, chat , bubble):
+    def stream_gpt_response(self,chat):
         self.is_prompting = True
-        hightlight = Text_hightlighter(self, bubble.text)
-        code_index = []
+        right = BotBubble(app, app.chat_frame, "right")
+        r = right.add_text_box()
+        right.text_boxes[r].insert("end", f'{chat}')
+        right.adjust_text_box(right.text_boxes[r])
+        left = BotBubble(app, app.chat_frame, "left")
         is_coding = False
-        end_index = None
-        start_index = None
-        # Call the modified process_gpt_request function and handle the streamed response
-        for part in process_gpt_request(chat,self.Model,self.Provider):
-            self.textbox._parent_canvas.yview_moveto(1.0)
+        index=left.add_text_box()
+        parts = []
+        for part in process_gpt_request(chat,self.settings.model):
+            parts.append(part)
             if "```python" in part or "``" in part:
                 if is_coding:
-                    end_index = bubble.text.index("end")
+                    index = left.add_text_box()
                 else:
-                    start_index = bubble.text.index("insert")
+                    index = left.add_code_box()
+
                 is_coding = not is_coding
                 continue
-            if '`\n' in part:
-                part = part.replace("`\n","\n")
-
-            bubble.text.configure(state='normal')
-            if is_coding:
-                hightlight.insert_code(bubble.text, part)
-            else:
-                bubble.text.insert("end", part)
-
-            if end_index and start_index:
-                code_index.append((start_index, end_index))
-                end_index = None
-                start_index = None
-                hightlight.update(code_index)
-            
-            bubble.text.configure(state='disable')
-            bubble.text.see("end")
-            
-            bubble.on_text_change(self.textbox)  
-        self.is_prompting = False
+            if '`\n' in part or '`' in part:
+                continue
+            left.text_boxes[index].configure(state='normal')
+            left.text_boxes[index].insert("end", part)
+            left.text_boxes[index].configure(state='disable')
+            left.adjust_text_box(left.text_boxes[index])
+            # if left.text_boxes[index].is_code_block:
+            #     left.colorizers[index].update()
+            self.is_prompting = False
+        print(parts)
 
     def prompt(self):
         if not self.is_prompting:
-            chat = self.entry.get("0.0", "end")
-            self.entry.delete("0.0", "end") 
-
-            right = BotBubble(self,self.textbox,"right")
-            self.bubbles.append(right)
-            right.text.insert("end", f'{chat}\n') 
-            right.on_text_change(self.textbox) 
-
-
-            left = BotBubble(self,self.textbox,"left")
-            self.bubbles.append(left)
-
-            self.stream_response_thread = threading.Thread(target=self.stream_gpt_response, args=(chat,left))
+            chat = self.entry.get()
+            self.entry.delete('0' ,"end") 
+            self.chat_frame._parent_canvas.yview_moveto(1.0)
+            self.stream_response_thread = threading.Thread(target=self.stream_gpt_response, args=(chat,))
             self.stream_response_thread.start()
 
 if __name__ == "__main__":
     app = App()
-    # sv_ttk.set_theme("light")
-    # pywinstyles.apply_style(app, style = 'aero')
+    
     app.mainloop()
-    keyboard.wait()
+    # threading.Thread(target=keyboard.wait()).start()
             
