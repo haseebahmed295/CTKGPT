@@ -1,8 +1,10 @@
 import json
 from  pathlib import Path
 import threading
+import tkinter
 import customtkinter
 import keyboard
+from animations import Loading
 from keys import KeyboardHandler
 from Preferences import Prefrences, Models
 from Settings import Settings
@@ -10,6 +12,7 @@ from prompt import clear_chat_history, insert_text, process_gpt_request
 from CTkColorPicker import *
 from CTkMenuBar import *
 from bubbles import BotBubble
+from PIL import Image
 
 customtkinter.set_appearance_mode("Light")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("dark-blue")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -19,8 +22,7 @@ class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
         self.is_prompting = False
-        self.keyboard_handler = KeyboardHandler(self)
-        self.bubbles = []
+        # self.keyboard_handler = KeyboardHandler(self)
         self.settings = Settings(self)
 
         self.title('GPT')
@@ -76,7 +78,8 @@ class App(customtkinter.CTk):
         # create textbox
         self.font = customtkinter.CTkFont(size = 15)
         
-        self.chat_frame = customtkinter.CTkScrollableFrame(self,)                        
+        # self.attributes('-alpha', 0.9)
+        self.chat_frame = customtkinter.CTkScrollableFrame(self)                        
         self.chat_frame.grid(row=0, column=1,columnspan=3,rowspan = 3, padx=(10, 10), pady=( 10, 0) ,sticky="nsew")
         self.chat_frame.grid_columnconfigure(0, weight=1)
         
@@ -102,7 +105,7 @@ class App(customtkinter.CTk):
     def confi_textcolor(self):  
         pick_color = AskColor() # open the color picker
         color = pick_color.get()
-        for i in self.bubbles:
+        for i in BotBubble.bubbles:
             i.frame.configure(fg_color = color)
         # self.chat_frame.configure(text_color = color)
 
@@ -115,7 +118,7 @@ class App(customtkinter.CTk):
 
     def clear_chat(self):
         if not self.is_prompting:
-            for buble in self.bubbles:
+            for buble in BotBubble.bubbles:
                 for i in buble.text_boxes:
                     i.destroy()
                 buble.frame.destroy()
@@ -135,10 +138,22 @@ class App(customtkinter.CTk):
         except json.decoder.JSONDecodeError:
             print("No chat history")
             return
-
+        loading = self.loading_animation()
+        next(loading)
         for item in data:
             insert_text(self, item)
+        next(loading, None)
 
+    def loading_animation(self):
+        self.dummy = tkinter.Frame(self)                        
+        self.dummy.grid(row=0, column=1,columnspan=3,rowspan = 3, padx=(10, 10), pady=( 10, 0) ,sticky="nsew")
+        app.chat_frame.lower(app.dummy)
+        L = Loading(app, app.dummy)
+        L.animation()
+        yield
+        L.stop_animation()
+        app.chat_frame.lift(app.dummy)
+        
     def stream_gpt_response(self,chat):
         self.is_prompting = True
         right = BotBubble(app, app.chat_frame, "right")
@@ -148,9 +163,7 @@ class App(customtkinter.CTk):
         left = BotBubble(app, app.chat_frame, "left")
         is_coding = False
         index=left.add_text_box()
-        parts = []
         for part in process_gpt_request(chat,self.settings.model):
-            parts.append(part)
             if "```python" in part or "``" in part:
                 if is_coding:
                     index = left.add_text_box()
@@ -159,18 +172,17 @@ class App(customtkinter.CTk):
 
                 is_coding = not is_coding
                 continue
-            if '`\n' in part or '`' in part:
+            if '`\n' in part:
                 continue
             left.text_boxes[index].configure(state='normal')
             left.text_boxes[index].insert("end", part)
             left.text_boxes[index].configure(state='disable')
             left.adjust_text_box(left.text_boxes[index])
-            # if left.text_boxes[index].is_code_block:
-            #     left.colorizers[index].update()
+        for keys , values in BotBubble.colorizers.items():
+            values.update()
             self.is_prompting = False
-        print(parts)
 
-    def prompt(self):
+    def prompt(self , event = None):
         if not self.is_prompting:
             chat = self.entry.get()
             self.entry.delete('0' ,"end") 
@@ -180,7 +192,6 @@ class App(customtkinter.CTk):
 
 if __name__ == "__main__":
     app = App()
-    
     app.mainloop()
     # threading.Thread(target=keyboard.wait()).start()
             

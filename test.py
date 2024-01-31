@@ -1,21 +1,17 @@
 import tkinter as tk
 
-class ExpandoText(tk.Text):
-    def insert(self, *args, **kwargs):
-        result = tk.Text.insert(self, *args, **kwargs)
-        self.reset_height()
-        return result
-
-    def reset_height(self):
-        height = self.tk.call((self._w, "count", "-update", "-displaylines", "1.0", "end"))
-        self.configure(height=height)
 root = tk.Tk()
-text = ExpandoText(root, width=20, wrap="word")
-text.pack(fill="both", expand=True)
 
-root.update_idletasks()
-text.insert("1.0", "This is a line of text that will initially be wrapped.")
+# Configure the grid to expand equally
+root.grid_rowconfigure(0, weight=1)
+root.grid_rowconfigure(2, weight=1)
+root.grid_columnconfigure(0, weight=1)
+root.grid_columnconfigure(2, weight=1)
 
-root.after(5000, text.insert, "end", "This is more text")
+# Create a widget, for example a Label
+label = tk.Label(root, text="I am centered!")
+# Place the widget in the center cell of the grid
+label.grid(row=1, column=1)
 
+# Run the main loop
 root.mainloop()

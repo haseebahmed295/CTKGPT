@@ -102,7 +102,6 @@ def insert_text(app, item:iter):
             left.text_boxes[c].insert("end", f'{block[0]}')
             left.adjust_text_box(left.text_boxes[c])
             left.colorizers[c].update()
-
 def find_code_and_text_segments(text):
     """
     Returns a list of tuples, each containing a segment of the text, a boolean
