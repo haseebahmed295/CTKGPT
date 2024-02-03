@@ -26,11 +26,11 @@ Models = {
     }
 
 class Prefrences(customtkinter.CTkToplevel):
-    def __init__(self, master , *args, **kwargs):
+    def __init__(self, root , *args, **kwargs):
         # sourcery skip: merge-list-append, move-assign-in-block
-        super().__init__(master,*args, **kwargs)
+        super().__init__(root,*args, **kwargs)
         self.title('Prefrences')
-        self.master = master
+        self.root = root
         # As each frame is created, it is added to this list
         widget_list = []
 
@@ -40,25 +40,43 @@ class Prefrences(customtkinter.CTkToplevel):
 
         # === Create widgets ===
         # Keybind Changer
-        self.frame_1 = customtkinter.CTkFrame(master=self)
-        self.frame_1.columnconfigure(0, weight=1)  # lbl label
-        self.frame_1.columnconfigure(1, weight=0)  # lbl keybind
-        self.frame_1.columnconfigure(2, weight=0)  # btn set
-        self.label_1 = customtkinter.CTkLabel(master=self.frame_1, text="Chat Model: ")
-        self.label_1.grid(row=1, column=0, padx=20, pady=20)
-        self.entry_keybinds = customtkinter.CTkLabel(master=self.frame_1, text="")
-        self.entry_keybinds.grid(row=1, column=1, padx=20, pady=20)
-        self.option_1 = customtkinter.CTkOptionMenu(self.frame_1, values=list(Models.keys()), )
-        self.option_1.grid(row=1, column=2, padx=20, pady=20)
-        widget_list.append(self.frame_1)
+        self.model_frame = customtkinter.CTkFrame(self)
+        self.model_frame.columnconfigure(0, weight=1)
+        self.model_frame.columnconfigure(1, weight=0)
+        self.model_frame.columnconfigure(2, weight=0)  
+        self.model_label = customtkinter.CTkLabel(self.model_frame, text="Chat Model: ")
+        self.model_label.grid(row=1, column=0, padx=20, pady=20)
+        self.model_menu = customtkinter.CTkOptionMenu(self.model_frame, values=list(Models.keys()))
+        self.model_menu.grid(row=1, column=2, padx=20, pady=20)
+        widget_list.append(self.model_frame)
+        self.model_menu.set(self.root.settings.model)
 
-        self.option_1.set(self.master.settings.model)
+        self.Bubble_color_frame = customtkinter.CTkFrame(self)
+        self.Bubble_color_frame.columnconfigure(0, weight=1)
+        self.Bubble_color_frame.columnconfigure(1, weight=0)
+        self.Bubble_color_frame.columnconfigure(2, weight=0)  
+        self.Bubble_color_label = customtkinter.CTkLabel(self.Bubble_color_frame, text="Bubble Color: ")
+        self.Bubble_color_label.grid(row=1, column=0, padx=20, pady=20)
+        self.Bubble_color_menu = customtkinter.CTkOptionMenu(self.Bubble_color_frame, values=['white'])
+        self.Bubble_color_menu.grid(row=1, column=2, padx=20, pady=20)
+        widget_list.append(self.Bubble_color_frame)
+        self.Bubble_color_menu.set(self.root.settings.bubble_color)
 
+        self.scaling_frame = customtkinter.CTkFrame(self)
+        self.scaling_frame.columnconfigure(0, weight=1)
+        self.scaling_frame.columnconfigure(1, weight=0)
+        self.scaling_frame.columnconfigure(2, weight=0)  
+        self.scaling_label = customtkinter.CTkLabel(self.scaling_frame, text="UI Scaling: ")
+        self.scaling_label.grid(row=1, column=0, padx=20, pady=20)
+        self.scaling_menu = customtkinter.CTkOptionMenu(self.scaling_frame, values=["80%", "90%", "100%", "110%", "120%"])
+        self.scaling_menu.grid(row=1, column=2, padx=20, pady=20)
+        widget_list.append(self.scaling_frame)
+        self.scaling_menu.set(self.root.settings.scaling)
         # Keybind Note
         self.note = (
             "To apply and save changes click on save"
         )
-        self.lbl_keybind_note = customtkinter.CTkLabel(master=self, text=self.note)
+        self.lbl_keybind_note = customtkinter.CTkLabel(self, text=self.note)
         self.lbl_keybind_note.bind(
             "<Configure>",
             lambda e: self.lbl_keybind_note.configure(wraplength=self.lbl_keybind_note.winfo_width() - 10),
@@ -79,7 +97,7 @@ class Prefrences(customtkinter.CTkToplevel):
             widget_list[i].grid(row=i, column=0, columnspan=2, sticky="nsew", padx=20, pady=20)
 
         # Save button
-        self.btn_save = customtkinter.CTkButton(master=self, text="Save" , command=self.save_settings)
+        self.btn_save = customtkinter.CTkButton(self, text="Save" , command=self.save_settings)
         self.btn_save.grid(row=self.num_of_widgets + 2, column=0, columnspan=2, pady=20, padx=20)
 
         self.focus()
@@ -93,12 +111,16 @@ class Prefrences(customtkinter.CTkToplevel):
             with open(settings_file_path, 'r') as file:
                 data = json.load(file)
             
-            # Update the settings (assuming self.model_value contains the new model value)
-            data['Model'] = self.model_value  # Replace with the actual attribute that stores the model value
-            
+            # Update the settings (assuming self.model_button_value contains the new model value)
+            data['Model'] = self.model_menu.get()
+            data["Bubble_color"]
+            data["code_color"]
+            data["code_lable"]
+            data["font_size"] 
+            data["theme"]
+            data['scaling'] = self.scaling_menu.get()
             # Save the updated settings
             with open(settings_file_path, 'w') as file:
-                json.dump(data, file, indent=4)
-
+                json.dump(data, file)
 
 

@@ -5,6 +5,7 @@ class BotBubble:
     spacer = None
     bubbles = []
     colorizers = {}
+    code_lable = None
 
     def __init__(self, root, master, align="left"):
         # Initialize attributes
@@ -54,25 +55,21 @@ class BotBubble:
         # Return the index of the text box in the text_boxes list
         return len(self.text_boxes) - 1
     
-    def add_code_box(self, label=""):
+    def add_code_box(self):
         """
         Add a left bubble to the frame and return its index in the text_boxes list.
         """
-        code_box = customtkinter.CTkFrame(self.frame, fg_color=self.settings.code_lable, corner_radius=0)
-        customtkinter.CTkLabel(code_box, text=label, height=30).grid(sticky="w", padx=20)
         text = customtkinter.CTkTextbox(
-            code_box, 
+            self.frame,
             wrap="word",
             font=self.font,
             activate_scrollbars=False,
             fg_color=self.settings.code_color,
+            height=0,
             border_spacing=10, 
-            corner_radius=0,
-            height=0
         )
         text.is_code_block = True
-        code_box.grid(row=len(self.text_boxes) + 1, padx=20, pady=self.pady)
-        text.grid(row=1, sticky="w")
+        text.grid(row=len(self.text_boxes) + 1, padx=20, pady=self.pady)
         self.text_boxes.append(text)
         code_color = Text_highlighter(text)
         BotBubble.colorizers[len(self.text_boxes) - 1] = code_color
@@ -84,11 +81,10 @@ class BotBubble:
         text_box.delete("1.0", "end")
         text_box.insert("end", modified_text)
 
-    def adjust_text_box(self, text_box):
+    def adjust_text_box(self, text_box , code = False):
         """
         Update the text box dimensions based on the length of the text.
         """
-
         text = text_box.get('1.0', 'end')
         if text.endswith('\n') or text.startswith('\n'):
             self.format_text(text_box)
@@ -104,4 +100,5 @@ class BotBubble:
         while text_box._textbox.yview() != (0.0, 1.0) and not text_box._y_scrollbar.winfo_ismapped():
             text_box.configure(height=text_box.cget('height') + 25)
             self.master._parent_canvas.yview_moveto(1.0)
-        text_box._draw()
+        if code:
+            text_box._draw()

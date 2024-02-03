@@ -1,20 +1,20 @@
 import json
 from  pathlib import Path
 import threading
-import tkinter
+import time
 import customtkinter
-import keyboard
-from animations import Loading
+from animations import Loading , settings_img , trash_img , send_img
 from keys import KeyboardHandler
 from Preferences import Prefrences, Models
 from Settings import Settings
-from prompt import clear_chat_history, insert_text, process_gpt_request
+from responses import check_part, clear_chat_history, insert_text, process_gpt_request
 from CTkColorPicker import *
 from CTkMenuBar import *
 from bubbles import BotBubble
 from PIL import Image
+import pywinstyles
 
-customtkinter.set_appearance_mode("Light")  # Modes: "System" (standard), "Dark", "Light"
+customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("dark-blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
 class App(customtkinter.CTk):
@@ -22,8 +22,9 @@ class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
         self.is_prompting = False
-        # self.keyboard_handler = KeyboardHandler(self)
+        self.keyboard_handler = KeyboardHandler(self)
         self.settings = Settings(self)
+        self.set_scaling_event(self.settings.scaling)
 
         self.title('GPT')
         
@@ -35,58 +36,39 @@ class App(customtkinter.CTk):
         self.grid_rowconfigure((0, 1, 2), weight=1)
 
         # create sidebar frame with widgets
-        self.sidebar_frame = customtkinter.CTkFrame(self, width=140, corner_radius=0)
+        self.sidebar_frame = customtkinter.CTkFrame(self, corner_radius=5)
         self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
-        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="Chat App", font=customtkinter.CTkFont(size=20, weight="bold"))
-        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
-        self.sidebar_button_1 = customtkinter.CTkButton(self.sidebar_frame, text = 'Clear Chat' , command=self.clear_chat)
-        self.sidebar_button_1.grid(row=1, column=0, padx=20, pady=10)
-        self.textolor_button = customtkinter.CTkButton(self.sidebar_frame, text="Select color", command=self.confi_textcolor)
-        self.textolor_button.grid(row=4, column=0, padx=20, pady=(10, 10))
 
-        # self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, command=self.sidebar_button_event)
-        # self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
-        # self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, command=self.sidebar_button_event)
-        # self.sidebar_button_3.grid(row=3, column=0, padx=20, pady=10)
 
-        self.appearance_mode_label = customtkinter.CTkLabel(self.sidebar_frame, text="Appearance Mode:", anchor="w")
-        self.appearance_mode_label.grid(row=5, column=0, padx=20, pady=(10, 0))
-        self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.sidebar_frame, values=["Light", "Dark", "System"],
-                                                                       command=self.change_appearance_mode_event)
-        self.appearance_mode_optionemenu.grid(row=6, column=0, padx=20, pady=(10, 10))
-        self.scaling_label = customtkinter.CTkLabel(self.sidebar_frame, text="UI Scaling:", anchor="w")
-        self.scaling_label.grid(row=7, column=0, padx=20, pady=(10, 0))
-        self.scaling_optionemenu = customtkinter.CTkOptionMenu(self.sidebar_frame, values=["80%", "90%", "100%", "110%", "120%"],
-                                                               command=self.change_scaling_event)
+        self.clear_chat_button = customtkinter.CTkButton(self.sidebar_frame, width=20,text = '' ,fg_color='transparent', command=self.clear_chat , image=trash_img)
+        self.clear_chat_button.grid(row=1, column=0, sticky = 'w',padx=5, pady=(10, 20))
+        # self.textolor_button = customtkinter.CTkButton(self.sidebar_frame,width=20, text="",fg_color='transparent',command=self.confi_textcolor, image=send_img)
+        # self.textolor_button.grid(row=4, column=0, sticky = 'w',padx=10, pady=(10, 20))
 
-        self.scaling_optionemenu.grid(row=8, column=0, padx=20, pady=(10, 20))
-        self.option = customtkinter.CTkButton(self.sidebar_frame, text="Settings",
-                                                               command=self.open_settings)
-        self.option.grid(row=9, column=0, padx=20, pady=(10, 20))
+        self.option = customtkinter.CTkButton(self.sidebar_frame, text="",fg_color='transparent'
+                                              ,image=settings_img,width=20,command=self.open_settings)
+        self.option.grid(row=8, column=0,
+                         sticky = 'w',padx=5, pady=(10, 20)
+                         )
+        # pywinstyles.set_opacity(self.option,value=0.1, color="#000001")
 
         # create main entry and button
-        self.entry = customtkinter.CTkEntry(self,height=40)
-        # self.entry.insert(0, "Write some simple python code")# For testing
-        self.entry.grid(row=3, column=1, columnspan=2, padx=(20, 0), pady=(20, 20), sticky="nsew")
-        self.entry.bind('<Return>', self.prompt)
-
-        self.main_button_1 = customtkinter.CTkButton(master=self, text = 'Prompt', 
-            width=20, text_color=("gray10", "#DCE4EE") , command=self.prompt)
-        self.main_button_1.grid(row=3, column=3, padx=(10, 20), pady=(20, 20), sticky="nsew")
+        self.entry = customtkinter.CTkEntry(self,height=45,border_width=1,corner_radius=15, placeholder_text="Type Here",)
+        self.entry.grid(row=3, column=1, columnspan=2, padx=(10, 10), pady=(15, 15), sticky="nswe")
         
-        # create textbox
+
+        self.main_button_1 = customtkinter.CTkButton(self.entry, text = '', command=self.prompt ,width=20, fg_color='transparent',image=send_img)
+        self.main_button_1.place(relx=1.0, x= -10, rely=0.8, anchor="se")
+        
+        # create font
         self.font = customtkinter.CTkFont(size = 15)
         
         # self.attributes('-alpha', 0.9)
-        self.chat_frame = customtkinter.CTkScrollableFrame(self)                        
+        self.chat_frame = customtkinter.CTkScrollableFrame(self , fg_color=self.settings.frame_color)                        
         self.chat_frame.grid(row=0, column=1,columnspan=3,rowspan = 3, padx=(10, 10), pady=( 10, 0) ,sticky="nsew")
         self.chat_frame.grid_columnconfigure(0, weight=1)
         
-        # self.chat_frame_1 = customtkinter.CTkTextbox(self.chat_frame , height = self.chat_frame.cget('height') ,font=self.font , bg_color='gray')
-        # self.chat_frame_1.grid(row=0, column=1, padx=(20, 20), pady=(20, 20) ,sticky="nsew")
-
-        # self.hightlight = Text_highlighter(self, self.chat_frame)
 
         # self.menu = CTkTitleMenu(self , x_offset=100).add_cascade("Options" , fg_color = 'transparent' ,corner_radius = 4 , hover_color = '#bcbcbc')
         # op = CustomDropdownMenu(widget=self.menu)
@@ -102,19 +84,14 @@ class App(customtkinter.CTk):
         else:
             self.toplevel_window.focus()
  
+    def set_scaling_event(self, new_scaling: str):
+        new_scaling_float = int(new_scaling.replace("%", "")) / 100
+        customtkinter.set_widget_scaling(new_scaling_float)
     def confi_textcolor(self):  
-        pick_color = AskColor() # open the color picker
+        pick_color = AskColor()
         color = pick_color.get()
         for i in BotBubble.bubbles:
             i.frame.configure(fg_color = color)
-        # self.chat_frame.configure(text_color = color)
-
-    def change_appearance_mode_event(self, new_appearance_mode: str):
-        customtkinter.set_appearance_mode(new_appearance_mode)
-
-    def change_scaling_event(self, new_scaling: str):
-        new_scaling_float = int(new_scaling.replace("%", "")) / 100
-        customtkinter.set_widget_scaling(new_scaling_float)
 
     def clear_chat(self):
         if not self.is_prompting:
@@ -128,31 +105,37 @@ class App(customtkinter.CTk):
         """
         Load setup from settings.json and chat_history.json files.
         """
-        chat_history_file = Path('prefs/chat_history.json')
+        self.is_prompting = True
+        chat_history_file_path = Path('prefs/chat_history.json')
 
         try:
-            with chat_history_file.open('r') as f:
-                data = json.load(f)
+            with chat_history_file_path.open('r') as file:
+                data = json.load(file)
             if not data:
+                self.is_prompting = False
                 return
         except json.decoder.JSONDecodeError:
-            print("No chat history")
+            self.is_prompting = False
             return
-        loading = self.loading_animation()
-        next(loading)
+
+        loading_animation = self.loading_animation()
+        next(loading_animation)
         for item in data:
             insert_text(self, item)
-        next(loading, None)
+        next(loading_animation, None)
+        self.is_prompting = False
 
     def loading_animation(self):
-        self.dummy = tkinter.Frame(self)                        
+        self.dummy = customtkinter.CTkFrame(self)                        
         self.dummy.grid(row=0, column=1,columnspan=3,rowspan = 3, padx=(10, 10), pady=( 10, 0) ,sticky="nsew")
         app.chat_frame.lower(app.dummy)
         L = Loading(app, app.dummy)
-        L.animation()
+        L.start_thread()
         yield
-        L.stop_animation()
+        L.stop_thread()
         app.chat_frame.lift(app.dummy)
+        del L
+        del self.dummy
         
     def stream_gpt_response(self,chat):
         self.is_prompting = True
@@ -164,20 +147,19 @@ class App(customtkinter.CTk):
         is_coding = False
         index=left.add_text_box()
         for part in process_gpt_request(chat,self.settings.model):
-            if "```python" in part or "``" in part:
+            time.sleep(0.05)
+            if "``" in part or '```python' in part:
                 if is_coding:
                     index = left.add_text_box()
                 else:
                     index = left.add_code_box()
-
                 is_coding = not is_coding
                 continue
-            if '`\n' in part:
-                continue
+            part = check_part(part , is_coding)
             left.text_boxes[index].configure(state='normal')
             left.text_boxes[index].insert("end", part)
             left.text_boxes[index].configure(state='disable')
-            left.adjust_text_box(left.text_boxes[index])
+            left.adjust_text_box(left.text_boxes[index] , code=True if is_coding else False)
         for keys , values in BotBubble.colorizers.items():
             values.update()
             self.is_prompting = False
@@ -193,5 +175,4 @@ class App(customtkinter.CTk):
 if __name__ == "__main__":
     app = App()
     app.mainloop()
-    # threading.Thread(target=keyboard.wait()).start()
             

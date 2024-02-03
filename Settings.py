@@ -1,12 +1,9 @@
 
-
 import json
-
-
 class Settings(object):
-    def __init__(self , master):
-        self.master = master
-        settings_file_path = 'prefs/settings.json'  # Update the path to your settings file
+    def __init__(self ,root):
+        self.root = root
+        settings_file_path = 'prefs/settings.json'
 
         # Load settings from the JSON file
         with open(settings_file_path, 'r') as file:
@@ -18,4 +15,7 @@ class Settings(object):
         self.code_color = settings.get("code_color", "#ff5d5d")  # Default red color
         self.code_lable = settings.get("code_lable", "#737d7d")  # Default gray color
         self.font_size = settings.get("font_size", 15)  # Default font size
-        self.theme = settings.get("theme", "light")  # Default theme
+        self.theme = settings.get("theme", "Dark")  # Default theme
+        self.scaling = settings.get("scaling", "100%")  # Default theme
+        self.frame_color = settings.get("frame_color", "#111827")  # Default theme
+    

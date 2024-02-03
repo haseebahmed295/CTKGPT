@@ -1,25 +1,17 @@
-import keyboard
 
 class KeyboardHandler:
     def __init__(self, app):
         self.app = app
-        self.keys = {'ctrl+-':self.on_ctrl_minus , 'ctrl+=':self.on_ctrl_plus, 'enter':self.app.prompt}
-        self.add_keys(self.keys)
+        self.app.bind('<Control-minus>', self.on_ctrl_minus)
+        self.app.bind('<Control-equal>', self.on_ctrl_plus)
+        self.app.bind('<Return>', self.on_enter)
+    def on_ctrl_minus(self, event=None):
+        current_size = self.app.font.cget('size')
+        if current_size > 1:
+            self.app.font.configure(size=current_size - 1)
 
-    def add_keys(self , keys):
-        for key in keys:
-            keyboard.add_hotkey(key, keys[key])
-        
-    def on_ctrl_minus(self):
-        if self.app.font.cget('size') > 1:
-            self.app.font.configure(size = self.app.font.cget('size') - 1)
-        else:
-            self.app.font.configure(size = 2)
-        
+    def on_ctrl_plus(self, event=None):
+        self.app.font.configure(size=self.app.font.cget('size') + 1)
 
-    def on_ctrl_plus(self):
-        if self.app.font.cget('size') > 1:
-            self.app.font.configure(size = self.app.font.cget('size') + 1)
-        else:
-            self.app.font.configure(size = 2)
-        
+    def on_enter(self, event=None):
+        self.app.prompt()

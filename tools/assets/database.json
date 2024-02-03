@@ -399,8 +399,8 @@
 	"full_desc": "Implementation of a slider widget using tkinter, multiple slider supported.",
 	"author": "MengxLi",
 	"highlights": ["Multi-headed sliders", "Customisable slider"],
-	"repo_url": "https://github.com/pmgagne/tkinterdnd2",
-	"image_url": "https://camo.githubusercontent.com/fe742c09edaec51969d3d5de63e32427fdce2a1a53eb8f10b91283b947903806/687474703a2f2f692e6962622e636f2f7a5259503946762f416e6e6f746174696f6e2d323032302d30322d31332d3137323931342e706e67",
+	"repo_url": "https://github.com/MenxLi/tkSliderWidget",
+	"image_url": "http://i.ibb.co/zRYP9Fv/Annotation-2020-02-13-172914.png",
 	"installation": "https://github.com/MenxLi/tkSliderWidget",
 	"tags": ["tkslider", "sliders", "multi slider", "scale", "points"]
 	}, 
@@ -409,14 +409,28 @@
 	"name": "animatedgif",
 	"type": "manual",
 	"icon": "tk",
-	"desc": "GIF widget",
+	"desc": "Tk GIF widget",
 	"full_desc": "A very simple class (subclass of tkinter.Label) that displays an animated GIF in a label and either runs the animation in a separate thread or using tkinter's after() method.",
 	"author": "OJ Skjelten",
-	"highlights": ["Show gifs in tkinter window", "Customisable slider"],
+	"highlights": ["Show gifs in tkinter window"],
 	"repo_url": "https://github.com/olesk75/AnimatedGIF",
 	"image_url": null,
 	"installation": "https://github.com/olesk75/AnimatedGIF",
 	"tags": ["gifs", "animation", "label"]
+	},
+
+"CTkGif": {
+	"name": "CTkGIF",
+	"type": "manual",
+	"icon": "ctk",
+	"desc": "Gif Widget for CustomTkinter",
+	"full_desc": "Gif Widget for CustomTkinter",
+	"author": "IfTrueEqualsEqualsTrue",
+	"highlights": ["Show gifs in customtkinter window"],
+	"repo_url": "https://github.com/IfTrueEqualsEqualsTrue/CTkGif",
+	"image_url": null,
+	"installation": "https://github.com/IfTrueEqualsEqualsTrue/CTkGif",
+	"tags": ["gifs", "animation", "label", "ctkgif"]
 	},
 
 "AwesomeTkinter": {
@@ -669,5 +683,47 @@
 	"image_url": "https://github.com/anamite/ctk_widget/assets/77412636/d53b3537-45a5-4b05-8d21-a70e61a09b45",
 	"installation": "https://github.com/anamite/ctk_widget",
 	"tags": ["ctkmeter", "meter", "dial", "gauge", "circular progressbar", "progressbar","loading"]
+	},
+	
+"Popup Menu": {
+	"name": "popup menu",
+	"type": "manual",
+	"icon": "ctk",
+	"desc": "Right click Menu",
+	"full_desc": "A custom right click menu class for customtkinter.",
+	"author": "Akascape",
+	"highlights": ["Right click menu", "Hides with outside click", "Rounded corners", "Customizable options", "No installation required"],
+	"repo_url": "https://www.akascape.com/coding/how-to-make-a-popup-menu-in-customtkinter",
+	"image_url": "https://github.com/TomSchimansky/CustomTkinter/assets/89206401/b66e6683-7caf-46cc-8a3e-2fed9c584c9a",
+	"installation": "https://www.akascape.com/coding/how-to-make-a-popup-menu-in-customtkinter",
+	"tags": ["popupmenu", "floatingwindow", "rightclick", "menu", "options", "roundedcorners"]
+	},
+
+"Full Custom Window": {
+	"name": "customwindow",
+	"type": "manual",
+	"icon": "ctk",
+	"desc": "custom window style",
+	"full_desc": "A custom window class with new header style for windows 10/11 with rounded corners",
+	"author": "Akascape",
+	"highlights": ["Drag window precisely", "Customize title bar", "Resizable window", "Icon image", "Rounded corners"],
+	"repo_url": "https://www.akascape.com/coding/full-python-window-template-with-new-header",
+	"image_url": "https://user-images.githubusercontent.com/89206401/205429162-b89b06d9-5db5-4844-b8ee-903a193e9463.jpg",
+	"installation": "https://www.akascape.com/coding/full-python-window-template-with-new-header",
+	"tags": ["window", "macos", "style", "customwindow"]
+	},
+
+"Tk-to-CTk": {
+	"name": "tkinter-to-customtkinter",
+	"type": "manual",
+	"icon": "ctk",
+	"desc": "conversion tool",
+	"full_desc": "Convert your tkinter scripts and guis to custom tkinter with this command line tool. Comes with graphical user interface option and can determine programming paradigm and import structure to keep consistency across files",
+	"author": "Donny",
+	"highlights": ["Convert tkinter app to ctk"],
+	"repo_url": "https://github.com/Donny-GUI/tkinter-to-customtkinter-converter",
+	"image_url": "https://user-images.githubusercontent.com/108424001/226063288-66da2f57-f5b7-49f1-bdd5-f465e963b125.png",
+	"installation": "https://github.com/Donny-GUI/tkinter-to-customtkinter-converter",
+	"tags": ["tkintertocustomtkinter", "tktoctk", "convertor","tools"]
 	}
 }

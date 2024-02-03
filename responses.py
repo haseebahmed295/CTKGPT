@@ -3,9 +3,7 @@ import re
 import g4f
 import os
 import json
-
 from bubbles import BotBubble
-
 def process_gpt_request(prompt_text , model):
     # g4f.debug.logging = True # Enable debug logging
     # g4f.debug.version_check = False # Disable automatic version checking
@@ -48,7 +46,7 @@ def process_gpt_request(prompt_text , model):
 
     chat_history.append({
         'prompt': prompt_text,
-        'response': "".join(full_response), # full_response
+        'response': full_response, # full_response
     })
 
     # Save the updated chat history to the file
@@ -96,11 +94,13 @@ def insert_text(app, item:iter):
         if not block[1]:
             c = left.add_text_box()
             left.text_boxes[c].insert("end", f'{block[0]}')
+            left.text_boxes[c].configure(state='disable')
             left.adjust_text_box(left.text_boxes[c])
         else:
-            c = left.add_code_box(block[2])
+            c = left.add_code_box()
             left.text_boxes[c].insert("end", f'{block[0]}')
-            left.adjust_text_box(left.text_boxes[c])
+            left.text_boxes[c].configure(state='disable')
+            left.adjust_text_box(left.text_boxes[c] , code=True)
             left.colorizers[c].update()
 def find_code_and_text_segments(text):
     """
@@ -114,6 +114,7 @@ def find_code_and_text_segments(text):
     list: A list of tuples with each containing a segment of text, a boolean,
           and the language name (str or None).
     """
+    text = "".join(text)
     # Regular expression pattern to find code blocks with any language
     pattern = r"```(\w+)?\s(.*?)```"
     # Find all matches and their positions
@@ -140,3 +141,13 @@ def find_code_and_text_segments(text):
         segments.append((text[last_idx:], False, None))
     
     return segments
+
+def check_part(part , is_coding):
+    if '`\n' in part:
+        return part.replace("`","")
+    elif '\n\n' in part:
+        return part.replace("\n\n","")
+    elif 'python' in part and is_coding:
+        return part.replace('python','')
+    else:
+        return part
